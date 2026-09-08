@@ -4,17 +4,7 @@
 
 Сайт проекта: [iglakovmaks.github.io/SwitchLang](https://iglakovmaks.github.io/SwitchLang)
 
-На сайте доступны готовые сборки для macOS и Windows и промо-видео приложения.
-
-## Промо-видео
-
-<p align="center">
-  <a href="https://iglakovmaks.github.io/SwitchLang/promovideo.mp4">
-    <img src="promovideo-poster.jpg" alt="Смотреть промо-видео SwitchLang" width="900" />
-  </a>
-</p>
-
-Нажмите на превью, чтобы открыть видео.
+На сайте доступны готовые сборки для macOS и Windows, промо-видео и скриншоты приложения.
 
 ```text
 руддщ → hello
