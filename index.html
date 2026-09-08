@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#050506" />
+    <meta name="description" content="SwitchLang — исправляйте текст, набранный в неправильной раскладке, одним системным сочетанием клавиш." />
+    <meta property="og:title" content="SwitchLang — набирайте мысли, не раскладку" />
+    <meta property="og:description" content="Мгновенно исправляет текст, набранный в неправильной раскладке, на macOS и Windows." />
+    <meta property="og:image" content="appscreen.png" />
+    <title>SwitchLang — набирайте мысли, не раскладку</title>
+    <link rel="icon" type="image/png" href="icon.png" />
+    <link rel="stylesheet" href="styles.css" />
+    <script defer src="script.js"></script>
+  </head>
+  <body>
+    <header class="site-header" data-header>
+      <div class="shell nav-shell">
+        <a class="brand" href="#top" aria-label="SwitchLang — на главную">
+          <img class="brand-icon" src="icon.png" alt="" />
+          <span>SwitchLang</span>
+        </a>
+
+        <nav class="desktop-nav" aria-label="Основная навигация">
+          <a href="#how-it-works">Как работает</a>
+          <a href="#screens">В приложении</a>
+          <a href="#download">Скачать</a>
+        </nav>
+
+        <div class="nav-actions">
+          <a class="github-link" href="https://github.com/iglakovmaks/SwitchLang" target="_blank" rel="noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+          <a class="nav-download" href="#download">Скачать</a>
+          <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="mobile-menu" aria-label="Открыть меню">
+            <span></span><span></span>
+          </button>
+        </div>
+      </div>
+
+      <nav class="mobile-menu" id="mobile-menu" aria-label="Мобильная навигация">
+        <a href="#how-it-works">Как работает</a>
+        <a href="#screens">В приложении</a>
+        <a href="#download">Скачать</a>
+        <a href="https://github.com/iglakovmaks/SwitchLang" target="_blank" rel="noreferrer">GitHub ↗</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero" id="top">
+        <div class="hero-orb hero-orb-one" aria-hidden="true"></div>
+        <div class="hero-orb hero-orb-two" aria-hidden="true"></div>
+        <div class="shell hero-shell">
+          <div class="hero-copy">
+            <p class="eyebrow"><span class="eyebrow-dot"></span> Для macOS и Windows</p>
+            <h1>Набирайте мысли.<br /><span>Не раскладку.</span></h1>
+            <p class="hero-lead">SwitchLang замечает текст в неправильной раскладке и меняет его одним привычным сочетанием клавиш. Без копирования. Без перезапуска. Без лишних движений.</p>
+            <div class="hero-actions">
+              <a class="button button-primary" href="https://github.com/iglakovmaks/SwitchLang/releases/download/v0.2.0/SwitchLang.dmg">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M16.52 12.67c.02 2.17 1.9 2.9 1.92 2.91-.02.05-.3 1.04-1 2.06-.6.88-1.23 1.76-2.21 1.78-.96.02-1.27-.57-2.38-.57-1.1 0-1.45.55-2.36.59-.95.04-1.67-.95-2.27-1.83-1.24-1.8-2.18-5.1-.91-7.32.63-1.1 1.75-1.8 2.96-1.82.93-.02 1.81.63 2.37.63.56 0 1.61-.78 2.71-.67.46.02 1.76.19 2.59 1.44-.07.04-1.55.9-1.53 2.8ZM14.74 5.3c.5-.6 1.33-1 2.14-1.04.1.86-.25 1.73-.75 2.34-.5.6-1.3 1.01-2.1.95-.1-.83.27-1.71.71-2.25Z" /></svg>
+                Скачать для Mac
+              </a>
+              <a class="button button-ghost" href="https://github.com/iglakovmaks/SwitchLang/releases/download/v0.2.0/SwitchLang-win-x64.zip">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 5.1 10.8 4v7.7H3V5.1Zm8.8-1.25L21 2.5v9.2h-9.2V3.85ZM3 12.3h7.8V20L3 18.9v-6.6Zm8.8 0H21v8.2l-9.2-1.3v-6.9Z" /></svg>
+                Скачать для Windows
+              </a>
+            </div>
+            <p class="hero-meta"><span>⌘ / Ctrl + Space</span> · бесплатный тестовый релиз · работает в фоне</p>
+          </div>
+
+          <div class="hero-visual" aria-label="Демонстрация SwitchLang">
+            <div class="hero-visual-glow" aria-hidden="true"></div>
+            <div class="demo-window">
+              <div class="window-bar">
+                <div class="window-lights" aria-hidden="true"><i></i><i></i><i></i></div>
+                <span class="window-title">SwitchLang</span>
+                <span class="window-status"><span></span> active</span>
+              </div>
+              <div class="video-wrap">
+                <video autoplay muted loop playsinline preload="metadata" poster="appscreen.png">
+                  <source src="promovideo.mp4" type="video/mp4" />
+                  <source src="promovideo.mov" type="video/quicktime" />
+                </video>
+                <div class="video-caption"><span class="caption-key">⌘</span><span>Space</span><span class="caption-arrow">→</span><span class="caption-highlight">готово</span></div>
+              </div>
+            </div>
+            <div class="floating-note floating-note-top"><span class="floating-icon">RU</span><span>не та раскладка?</span></div>
+            <div class="floating-note floating-note-bottom"><span class="floating-check">✓</span><span>исправлено за секунду</span></div>
+          </div>
+        </div>
+        <a class="scroll-hint" href="#how-it-works" aria-label="Перейти к описанию"><span></span></a>
+      </section>
+
+      <section class="intro section-pad" id="how-it-works">
+        <div class="shell">
+          <div class="section-heading centered-heading">
+            <p class="eyebrow eyebrow-dark">Простая привычка</p>
+            <h2>Три движения.<br /><em>Ноль раздражения.</em></h2>
+            <p>Выделите текст, нажмите своё обычное сочетание для смены языка — и продолжайте работу. SwitchLang делает всё остальное.</p>
+          </div>
+          <div class="steps-grid">
+            <article class="step-card">
+              <span class="step-number">01</span>
+              <div class="step-icon step-icon-select"><span></span></div>
+              <h3>Выделите</h3>
+              <p>Отметьте текст, который случайно набрался не в той раскладке.</p>
+            </article>
+            <article class="step-card step-card-accent">
+              <span class="step-number">02</span>
+              <div class="step-icon step-icon-key"><b>⌘</b><b>Space</b></div>
+              <h3>Нажмите</h3>
+              <p>Используйте привычное системное сочетание переключения языка.</p>
+            </article>
+            <article class="step-card">
+              <span class="step-number">03</span>
+              <div class="step-icon step-icon-spark"><span>✦</span></div>
+              <h3>Продолжайте</h3>
+              <p>Текст изменится на месте и останется выделенным для повторного переключения.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="feature-band">
+        <div class="shell feature-layout">
+          <div class="feature-copy">
+            <p class="eyebrow eyebrow-light">Всегда рядом. Никогда не мешает.</p>
+            <h2>Работает там,<br /><span>где работает текст.</span></h2>
+            <p>Safari, Notes, Word, Pages, мессенджеры и любые другие приложения. SwitchLang живёт в фоне и просыпается только тогда, когда вы выделили текст.</p>
+            <div class="feature-pills"><span>macOS</span><span>Windows</span><span>RU ↔ EN</span></div>
+          </div>
+          <div class="feature-quote">
+            <span class="quote-mark">“</span>
+            <p>Больше не нужно стирать половину сообщения и начинать заново.</p>
+            <span class="quote-line"></span>
+            <small>SwitchLang</small>
+          </div>
+        </div>
+      </section>
+
+      <section class="screens section-pad" id="screens">
+        <div class="shell">
+          <div class="section-heading screens-heading">
+            <p class="eyebrow eyebrow-dark">Один интерфейс. Две платформы.</p>
+            <h2>Сделано, чтобы<br /><em>не отвлекать.</em></h2>
+            <p>Нативные клиенты используют привычные системные элементы и остаются незаметными, пока не понадобятся.</p>
+          </div>
+          <div class="screen-grid">
+            <figure class="screen-card screen-card-mac">
+              <div class="screen-label"><span class="platform-dot platform-dot-blue"></span> macOS</div>
+              <div class="screen-image-wrap"><img src="appscreen.png" alt="Окно приложения SwitchLang на macOS" loading="lazy" /></div>
+              <figcaption>Простой статус в строке меню и понятная настройка доступа.</figcaption>
+            </figure>
+            <figure class="screen-card screen-card-windows">
+              <div class="screen-label"><span class="platform-dot platform-dot-dark"></span> Windows</div>
+              <div class="screen-image-wrap"><img src="windowscreen.png" alt="Окно приложения SwitchLang на Windows" loading="lazy" /></div>
+              <figcaption>Лёгкий фоновой клиент для Windows 10 и 11.</figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <section class="download-section" id="download">
+        <div class="download-orb" aria-hidden="true"></div>
+        <div class="shell download-shell">
+          <div class="download-heading">
+            <p class="eyebrow eyebrow-light">Попробуйте сами</p>
+            <h2>Ваш текст.<br /><span>Ваша раскладка.</span></h2>
+            <p>Скачайте SwitchLang и верните себе несколько секунд каждый раз, когда пальцы опережают взгляд.</p>
+          </div>
+          <div class="download-cards">
+            <a class="download-card" href="https://github.com/iglakovmaks/SwitchLang/releases/download/v0.2.0/SwitchLang.dmg">
+              <div class="download-card-icon mac-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M16.52 12.67c.02 2.17 1.9 2.9 1.92 2.91-.02.05-.3 1.04-1 2.06-.6.88-1.23 1.76-2.21 1.78-.96.02-1.27-.57-2.38-.57-1.1 0-1.45.55-2.36.59-.95.04-1.67-.95-2.27-1.83-1.24-1.8-2.18-5.1-.91-7.32.63-1.1 1.75-1.8 2.96-1.82.93-.02 1.81.63 2.37.63.56 0 1.61-.78 2.71-.67.46.02 1.76.19 2.59 1.44-.07.04-1.55.9-1.53 2.8ZM14.74 5.3c.5-.6 1.33-1 2.14-1.04.1.86-.25 1.73-.75 2.34-.5.6-1.3 1.01-2.1.95-.1-.83.27-1.71.71-2.25Z" /></svg></div>
+              <div><strong>Скачать для macOS</strong><span>DMG · версия 0.2.0</span></div>
+              <span class="download-arrow" aria-hidden="true">↓</span>
+            </a>
+            <a class="download-card" href="https://github.com/iglakovmaks/SwitchLang/releases/download/v0.2.0/SwitchLang-win-x64.zip">
+              <div class="download-card-icon windows-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 5.1 10.8 4v7.7H3V5.1Zm8.8-1.25L21 2.5v9.2h-9.2V3.85ZM3 12.3h7.8V20L3 18.9v-6.6Zm8.8 0H21v8.2l-9.2-1.3v-6.9Z" /></svg></div>
+              <div><strong>Скачать для Windows</strong><span>ZIP · x64 · Windows 10/11</span></div>
+              <span class="download-arrow" aria-hidden="true">↓</span>
+            </a>
+          </div>
+          <p class="download-note">Исходный код доступен на <a href="https://github.com/iglakovmaks/SwitchLang" target="_blank" rel="noreferrer">GitHub</a> · Developed by iglakovmaks</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="shell footer-shell">
+        <a class="brand footer-brand" href="#top"><img class="brand-icon" src="icon.png" alt="" /><span>SwitchLang</span></a>
+        <p>Набирайте мысли. Не раскладку.</p>
+        <span>© <span data-year>2026</span> iglakovmaks</span>
+      </div>
+    </footer>
+  </body>
+</html>
