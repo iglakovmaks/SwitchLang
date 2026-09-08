@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+.venv/
+macos/.build/
+macos/.swiftpm/
+macos/dist/
+windows/bin/
+windows/obj/
+windows/SwitchLang-win-x64.zip
+downloads/

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationIcon>icon.ico</ApplicationIcon>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>SwitchLang</AssemblyName>
+    <RootNamespace>SwitchLang</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="..\icon.png" Link="icon.png" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>
