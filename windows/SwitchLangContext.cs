@@ -1,4 +1,5 @@
 using Microsoft.Win32;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace SwitchLang;
@@ -9,9 +10,14 @@ internal sealed class SwitchLangContext : ApplicationContext
     private readonly System.Windows.Forms.Timer layoutTimer;
     private readonly ToolStripMenuItem toggleItem;
     private KeyboardLayout? previousLayout;
+    private PendingConversion? pendingConversion;
     private Form? welcomeForm;
     private bool enabled = true;
     private bool isConverting;
+
+    private static readonly TimeSpan LayoutSettleDelay = TimeSpan.FromMilliseconds(140);
+    private const int ClipboardAttempts = 12;
+    private const int ClipboardRetryDelayMs = 25;
 
     public SwitchLangContext()
     {
@@ -25,6 +31,10 @@ internal sealed class SwitchLangContext : ApplicationContext
         toggleItem.Click += (_, _) =>
         {
             enabled = toggleItem.Checked;
+            if (!enabled)
+            {
+                pendingConversion = null;
+            }
         };
 
         var menu = new ContextMenuStrip();
@@ -58,28 +68,48 @@ internal sealed class SwitchLangContext : ApplicationContext
             return;
         }
 
+        var currentLayout = current.Value;
+
         if (previousLayout is null)
         {
-            previousLayout = current;
+            previousLayout = currentLayout;
             return;
         }
 
-        if (current == previousLayout)
+        if (currentLayout == previousLayout)
+        {
+            TryProcessPendingConversion(currentLayout);
+            return;
+        }
+
+        var sourceLayout = previousLayout.GetValueOrDefault();
+        previousLayout = currentLayout;
+        pendingConversion = enabled && !isConverting
+            ? new PendingConversion(sourceLayout, currentLayout, DateTime.UtcNow + LayoutSettleDelay)
+            : null;
+
+        TryProcessPendingConversion(currentLayout);
+    }
+
+    private void TryProcessPendingConversion(KeyboardLayout current)
+    {
+        if (!enabled || isConverting || pendingConversion is not { } pending)
         {
             return;
         }
 
-        var sourceLayout = previousLayout.Value;
-        previousLayout = current;
-        if (!enabled || isConverting)
+        if (pending.TargetLayout != current ||
+            DateTime.UtcNow < pending.ReadyAt ||
+            NativeMethods.IsModifierKeyDown())
         {
             return;
         }
 
+        pendingConversion = null;
         isConverting = true;
         try
         {
-            var result = ReplaceSelectedText(sourceLayout);
+            var result = ReplaceSelectedText(pending.SourceLayout);
             if (result.Success)
             {
                 notifyIcon.Text = "SwitchLang: исправлено";
@@ -121,13 +151,14 @@ internal sealed class SwitchLangContext : ApplicationContext
         try
         {
             originalClipboard = Clipboard.GetDataObject();
-            Clipboard.Clear();
-            NativeMethods.SendCtrlKey((ushort)'C');
-            Thread.Sleep(90);
+            if (!TryClearClipboard())
+            {
+                return ConversionResult.NotChanged("Буфер обмена занят");
+            }
 
-            var selected = Clipboard.ContainsText(TextDataFormat.UnicodeText)
-                ? Clipboard.GetText(TextDataFormat.UnicodeText)
-                : string.Empty;
+            NativeMethods.SendCtrlKey(NativeMethods.VK_C);
+
+            var selected = ReadClipboardText();
             if (string.IsNullOrEmpty(selected) || !KeyboardLayoutConverter.CanConvert(selected, sourceLayout))
             {
                 return ConversionResult.NotChanged("Выделенный текст не найден");
@@ -139,9 +170,13 @@ internal sealed class SwitchLangContext : ApplicationContext
                 return ConversionResult.NotChanged("В выделении нет символов для преобразования");
             }
 
-            Clipboard.SetText(converted, TextDataFormat.UnicodeText);
-            NativeMethods.SendCtrlKey((ushort)'V');
-            Thread.Sleep(90);
+            if (!TrySetClipboardText(converted))
+            {
+                return ConversionResult.NotChanged("Не удалось подготовить исправленный текст");
+            }
+
+            NativeMethods.SendCtrlKey(NativeMethods.VK_V);
+            Thread.Sleep(140);
 
             // Re-select the inserted text so another layout switch converts it back.
             NativeMethods.SelectPreviousCharacters(converted.Length);
@@ -153,12 +188,86 @@ internal sealed class SwitchLangContext : ApplicationContext
             {
                 try
                 {
-                    Clipboard.SetDataObject(originalClipboard, true);
+                    RestoreClipboard(originalClipboard);
                 }
                 catch
                 {
                     // Clipboard restoration must not crash the resident app.
                 }
+            }
+        }
+    }
+
+    private static bool TryClearClipboard()
+    {
+        for (var attempt = 0; attempt < ClipboardAttempts; attempt++)
+        {
+            try
+            {
+                Clipboard.Clear();
+                return true;
+            }
+            catch (ExternalException)
+            {
+                Thread.Sleep(ClipboardRetryDelayMs);
+            }
+        }
+
+        return false;
+    }
+
+    private static string ReadClipboardText()
+    {
+        for (var attempt = 0; attempt < ClipboardAttempts; attempt++)
+        {
+            try
+            {
+                if (Clipboard.ContainsText(TextDataFormat.UnicodeText))
+                {
+                    return Clipboard.GetText(TextDataFormat.UnicodeText);
+                }
+            }
+            catch (ExternalException)
+            {
+                // Another process may still be writing to the clipboard.
+            }
+
+            Thread.Sleep(ClipboardRetryDelayMs);
+        }
+
+        return string.Empty;
+    }
+
+    private static bool TrySetClipboardText(string text)
+    {
+        for (var attempt = 0; attempt < ClipboardAttempts; attempt++)
+        {
+            try
+            {
+                Clipboard.SetText(text, TextDataFormat.UnicodeText);
+                return true;
+            }
+            catch (ExternalException)
+            {
+                Thread.Sleep(ClipboardRetryDelayMs);
+            }
+        }
+
+        return false;
+    }
+
+    private static void RestoreClipboard(IDataObject clipboard)
+    {
+        for (var attempt = 0; attempt < ClipboardAttempts; attempt++)
+        {
+            try
+            {
+                Clipboard.SetDataObject(clipboard, true);
+                return;
+            }
+            catch (ExternalException)
+            {
+                Thread.Sleep(ClipboardRetryDelayMs);
             }
         }
     }
@@ -294,4 +403,9 @@ internal sealed class SwitchLangContext : ApplicationContext
         public static ConversionResult Changed(string details) => new(true, details);
         public static ConversionResult NotChanged(string details) => new(false, details);
     }
+
+    private readonly record struct PendingConversion(
+        KeyboardLayout SourceLayout,
+        KeyboardLayout TargetLayout,
+        DateTime ReadyAt);
 }

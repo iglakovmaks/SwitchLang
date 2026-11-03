@@ -9,6 +9,9 @@
     <Nullable>enable</Nullable>
     <AssemblyName>SwitchLang</AssemblyName>
     <RootNamespace>SwitchLang</RootNamespace>
+    <Version>0.2.1</Version>
+    <AssemblyVersion>0.2.1.0</AssemblyVersion>
+    <FileVersion>0.2.1.0</FileVersion>
   </PropertyGroup>
   <ItemGroup>
     <None Include="..\icon.png" Link="icon.png" CopyToOutputDirectory="PreserveNewest" />

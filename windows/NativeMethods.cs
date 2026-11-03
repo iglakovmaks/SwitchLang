@@ -6,7 +6,12 @@ internal static class NativeMethods
 {
     internal const ushort VK_CONTROL = 0x11;
     internal const ushort VK_SHIFT = 0x10;
+    internal const ushort VK_MENU = 0x12;
+    internal const ushort VK_LWIN = 0x5B;
+    internal const ushort VK_RWIN = 0x5C;
     internal const ushort VK_LEFT = 0x25;
+    internal const ushort VK_C = 0x43;
+    internal const ushort VK_V = 0x56;
     internal const uint INPUT_KEYBOARD = 1;
     internal const uint KEYEVENTF_KEYUP = 0x0002;
 
@@ -18,6 +23,9 @@ internal static class NativeMethods
 
     [DllImport("user32.dll")]
     internal static extern IntPtr GetKeyboardLayout(uint threadId);
+
+    [DllImport("user32.dll")]
+    private static extern short GetAsyncKeyState(int virtualKey);
 
     [DllImport("user32.dll", SetLastError = true)]
     internal static extern uint SendInput(uint numberOfInputs, INPUT[] inputs, int sizeOfInput);
@@ -55,6 +63,15 @@ internal static class NativeMethods
             (key, true),
             (VK_CONTROL, true)
         });
+    }
+
+    internal static bool IsModifierKeyDown()
+    {
+        return IsKeyDown(VK_CONTROL) ||
+               IsKeyDown(VK_SHIFT) ||
+               IsKeyDown(VK_MENU) ||
+               IsKeyDown(VK_LWIN) ||
+               IsKeyDown(VK_RWIN);
     }
 
     internal static void SelectPreviousCharacters(int count)
@@ -96,5 +113,10 @@ internal static class NativeMethods
         {
             throw new InvalidOperationException("Windows не смог отправить клавиатурное событие");
         }
+    }
+
+    private static bool IsKeyDown(ushort key)
+    {
+        return (GetAsyncKeyState(key) & 0x8000) != 0;
     }
 }

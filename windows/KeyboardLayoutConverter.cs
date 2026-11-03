@@ -36,10 +36,14 @@ internal static class KeyboardLayoutConverter
                 {
                     continue;
                 }
+
                 if (char.IsLetter(sourceCharacter) || char.IsLetter(targetCharacter) ||
                     Punctuation.Contains(sourceCharacter) || Punctuation.Contains(targetCharacter))
+                {
                     englishToRussian[sourceCharacter] = targetCharacter;
-                    russianToEnglish[targetCharacter] = sourceCharacter;
+                }
+
+                russianToEnglish[targetCharacter] = sourceCharacter;
             }
         }
 
