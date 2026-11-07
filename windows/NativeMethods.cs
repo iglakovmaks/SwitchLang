@@ -41,7 +41,24 @@ internal static class NativeMethods
     internal struct InputUnion
     {
         [FieldOffset(0)]
+        internal MOUSEINPUT mouseInput;
+
+        [FieldOffset(0)]
         internal KEYBDINPUT keyboardInput;
+
+        [FieldOffset(0)]
+        internal HARDWAREINPUT hardwareInput;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct MOUSEINPUT
+    {
+        internal int dx;
+        internal int dy;
+        internal uint mouseData;
+        internal uint flags;
+        internal uint time;
+        internal UIntPtr extraInfo;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -52,6 +69,14 @@ internal static class NativeMethods
         internal uint flags;
         internal uint time;
         internal UIntPtr extraInfo;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct HARDWAREINPUT
+    {
+        internal uint message;
+        internal ushort parameterLow;
+        internal ushort parameterHigh;
     }
 
     internal static void SendCtrlKey(ushort key)
@@ -109,7 +134,15 @@ internal static class NativeMethods
             }
         }).ToArray();
 
-        if (SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>()) != inputs.Length)
+        var inputSize = Marshal.SizeOf<INPUT>();
+        var expectedInputSize = IntPtr.Size == 8 ? 40 : 28;
+        if (inputSize != expectedInputSize)
+        {
+            throw new InvalidOperationException(
+                $"Некорректный размер Windows INPUT: {inputSize}, ожидался {expectedInputSize}");
+        }
+
+        if (SendInput((uint)inputs.Length, inputs, inputSize) != inputs.Length)
         {
             throw new InvalidOperationException("Windows не смог отправить клавиатурное событие");
         }
