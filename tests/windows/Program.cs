@@ -69,7 +69,14 @@ internal static class Program
                 await TestNotepad();
                 result = 0;
             }
-            catch (Exception e) { Console.Error.WriteLine(e); }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine(e);
+                using var screenshot = new Bitmap(Screen.PrimaryScreen!.Bounds.Width, Screen.PrimaryScreen.Bounds.Height);
+                using var graphics = Graphics.FromImage(screenshot);
+                graphics.CopyFromScreen(0, 0, 0, 0, screenshot.Size);
+                screenshot.Save("artifacts/editor-failure.png");
+            }
             finally
             {
                 if (app is { HasExited: false }) app.Kill(true);
@@ -88,9 +95,15 @@ internal static class Program
             await WaitFor(() => { notepad.Refresh(); return notepad.MainWindowHandle != IntPtr.Zero; }, "Notepad opened");
             var handle = notepad.MainWindowHandle;
             SetForegroundWindow(handle);
+            await Task.Delay(500);
             var root = AutomationElement.FromHandle(handle);
-            var edit = root.FindFirst(TreeScope.Descendants,
-                new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Edit))!;
+            var edit = root.FindAll(TreeScope.Descendants, new OrCondition(
+                    new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Edit),
+                    new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Document)))
+                .Cast<AutomationElement>()
+                .Where(e => e.Current.IsKeyboardFocusable && !e.Current.IsOffscreen)
+                .OrderByDescending(e => e.Current.BoundingRectangle.Width * e.Current.BoundingRectangle.Height)
+                .FirstOrDefault();
             Check(edit is not null, "Notepad editor found");
             edit!.SetFocus();
             await SetLayout(handle, English);

@@ -24,8 +24,10 @@ jobs:
           SWITCHLANG_LOG: ${{ github.workspace }}/artifacts/editor.log
         run: dotnet run --project tests/windows/WindowsIntegration.csproj -c Release -- artifacts/windows/SwitchLang.exe
       - name: Install browser test tools
+        if: ${{ !cancelled() }}
         run: npm install --prefix tests/windows/browser --ignore-scripts
       - name: Exercise Edge textarea with actual Windows layout changes
+        if: ${{ !cancelled() }}
         env:
           SWITCHLANG_LOG: ${{ github.workspace }}/artifacts/browser.log
         run: node tests/windows/browser/test.mjs artifacts/windows/SwitchLang.exe
