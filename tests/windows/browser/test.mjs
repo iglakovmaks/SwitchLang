@@ -16,10 +16,10 @@ try {
   await input.fill('ghbdtn');
   await input.press('Control+a');
   setLayout('00000419');
-  await page.waitForFunction(() => document.querySelector('#editor').value === 'привет', { timeout: 5000 });
+  await page.waitForFunction(() => document.querySelector('#editor').value === 'привет', null, { timeout: 5000 });
   console.log('PASS: Edge textarea English → Russian');
   setLayout('00000409');
-  await page.waitForFunction(() => document.querySelector('#editor').value === 'ghbdtn', { timeout: 5000 });
+  await page.waitForFunction(() => document.querySelector('#editor').value === 'ghbdtn', null, { timeout: 5000 });
   console.log('PASS: Edge textarea Russian → English');
 } catch (error) {
   console.error('Editor state:', await page.locator('#editor').evaluate(e => ({value:e.value,start:e.selectionStart,end:e.selectionEnd})));

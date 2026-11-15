@@ -1,6 +1,9 @@
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
+using System.Windows.Automation;
 using System.Windows.Forms;
+using SwitchLang;
 
 internal static class Program
 {
@@ -40,14 +43,30 @@ internal static class Program
                 Clipboard.SetText("clipboard-original");
                 await SetLayout(form.Handle, Russian);
                 await WaitFor(() => editor.Text == "привет", "English → Russian");
-                Check(editor.SelectedText == "привет", "Inserted text remains selected");
+                await WaitFor(() => editor.SelectedText == "привет", "Inserted text remains selected");
                 await SetLayout(form.Handle, English);
                 await WaitFor(() => editor.Text == "ghbdtn", "Russian → English");
+                await WaitFor(() => editor.SelectedText == "ghbdtn", "Reverse text remains selected");
                 Check(Clipboard.GetText() == "clipboard-original", "Clipboard preserved");
                 editor.Select(editor.TextLength, 0);
                 await SetLayout(form.Handle, Russian);
                 await Task.Delay(600);
                 Check(editor.Text == "ghbdtn", "No selection stays untouched");
+                Check(Clipboard.GetText() == "clipboard-original", "No selection preserves clipboard");
+                editor.Text = "руддщ";
+                editor.SelectAll();
+                SetKey(NativeMethods.VK_MENU, false);
+                SetKey(NativeMethods.VK_SHIFT, false);
+                await SetLayout(form.Handle, English);
+                await Task.Delay(250);
+                Check(editor.Text == "руддщ", "Waits while shortcut modifiers are held");
+                SetKey(NativeMethods.VK_SHIFT, true);
+                SetKey(NativeMethods.VK_MENU, true);
+                await WaitFor(() => editor.Text == "hello", "Converts after modifiers released");
+                await Task.Delay(150);
+                await SetLayout(form.Handle, Russian);
+                await WaitFor(() => editor.Text == "руддщ", "Repeated reverse conversion");
+                await TestNotepad();
                 result = 0;
             }
             catch (Exception e) { Console.Error.WriteLine(e); }
@@ -59,6 +78,44 @@ internal static class Program
         };
         Application.Run(form);
         return result;
+    }
+
+    private static async Task TestNotepad()
+    {
+        using var notepad = Process.Start("notepad.exe")!;
+        try
+        {
+            await WaitFor(() => { notepad.Refresh(); return notepad.MainWindowHandle != IntPtr.Zero; }, "Notepad opened");
+            var handle = notepad.MainWindowHandle;
+            SetForegroundWindow(handle);
+            var root = AutomationElement.FromHandle(handle);
+            var edit = root.FindFirst(TreeScope.Descendants,
+                new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Edit))!;
+            Check(edit is not null, "Notepad editor found");
+            edit!.SetFocus();
+            await SetLayout(handle, English);
+            await Task.Delay(500);
+            NativeMethods.SendUnicodeText("ghbdtn");
+            await Task.Delay(150);
+            NativeMethods.SendCtrlKey(0x41);
+            await Task.Delay(100);
+            await SetLayout(handle, Russian);
+            var text = (TextPattern)edit.GetCurrentPattern(TextPattern.Pattern);
+            await WaitFor(() => text.DocumentRange.GetText(-1).TrimEnd('\r', '\n') == "привет", "Real Notepad English → Russian");
+            await Task.Delay(150);
+            await SetLayout(handle, English);
+            await WaitFor(() => text.DocumentRange.GetText(-1).TrimEnd('\r', '\n') == "ghbdtn", "Real Notepad Russian → English");
+        }
+        finally { if (!notepad.HasExited) notepad.Kill(true); }
+    }
+
+    private static void SetKey(ushort key, bool up)
+    {
+        var input = new NativeMethods.INPUT { type = NativeMethods.INPUT_KEYBOARD,
+            union = new NativeMethods.InputUnion { keyboardInput = new NativeMethods.KEYBDINPUT {
+                virtualKey = key, flags = up ? NativeMethods.KEYEVENTF_KEYUP : 0
+            }}};
+        Check(NativeMethods.SendInput(1, new[] { input }, Marshal.SizeOf<NativeMethods.INPUT>()) == 1, "Key input accepted");
     }
 
     private static async Task SetLayout(IntPtr window, IntPtr layout)
