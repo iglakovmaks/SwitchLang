@@ -11,16 +11,19 @@ internal static class BrowserSelection
     {
         var iid = typeof(IAccessible).GUID;
         var hr = AccessibleObjectFromWindow(target.Focus, unchecked((uint)-4), ref iid, out var root);
+        DiagnosticLog.Write($"browser_accessible_root hr={hr:X8}");
         if (hr < 0 || root is null) return Unavailable();
         if (root is IServiceProvider services)
         {
             var ia2 = new Guid("E89F726E-C4F4-4C19-BB19-B647D7FA8478");
-            services.QueryService(ref ia2, ref ia2, out _);
+            var activation = services.QueryService(ref ia2, ref ia2, out _);
+            DiagnosticLog.Write($"browser_accessible_activation hr={activation:X8}");
         }
         var accessible = root;
         for (var depth = 0; depth < 12; depth++)
         {
             var focus = accessible.accFocus;
+            DiagnosticLog.Write($"browser_accessible_focus depth={depth} kind={focus?.GetType().Name ?? "none"}");
             var child = focus as IAccessible;
             if (child is null && focus is int childId && childId != 0)
                 child = accessible.get_accChild(childId) as IAccessible;
