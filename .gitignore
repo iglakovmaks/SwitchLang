@@ -11,3 +11,5 @@ windows/SwitchLang-win-x64.zip
 downloads/
 tests/windows/bin/
 tests/windows/obj/
+tests/windows/browser/node_modules/
+tests/windows/browser/package-lock.json
