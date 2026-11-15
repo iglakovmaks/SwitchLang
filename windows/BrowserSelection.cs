@@ -20,7 +20,11 @@ internal static class BrowserSelection
         var accessible = root;
         for (var depth = 0; depth < 12; depth++)
         {
-            if (accessible.accFocus is IAccessible child && !ReferenceEquals(child, accessible))
+            var focus = accessible.accFocus;
+            var child = focus as IAccessible;
+            if (child is null && focus is int childId && childId != 0)
+                child = accessible.get_accChild(childId) as IAccessible;
+            if (child is not null && !ReferenceEquals(child, accessible))
             {
                 accessible = child;
                 continue;
@@ -30,8 +34,9 @@ internal static class BrowserSelection
         var role = System.Convert.ToInt32(accessible.get_accRole(0));
         var state = System.Convert.ToInt32(accessible.get_accState(0));
         DiagnosticLog.Write($"browser_accessible role={role} protected={(state & 0x20000000) != 0}");
-        if ((state & (0x20000000 | 0x40)) != 0) return new(string.Empty);
+        if ((state & 0x20000000) != 0) return new(string.Empty);
         if (role != 42 || accessible is not IServiceProvider provider) return Unavailable();
+        if ((state & 0x40) != 0) return new(string.Empty);
         var service = typeof(IAccessible).GUID;
         var textId = typeof(IAccessibleText).GUID;
         hr = provider.QueryService(ref service, ref textId, out var value);
