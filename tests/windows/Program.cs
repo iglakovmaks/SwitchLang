@@ -31,6 +31,8 @@ internal static class Program
                 SetForegroundWindow(form.Handle);
                 form.Activate();
                 editor.Focus();
+                Console.WriteLine($"Editor handle={form.Handle} foreground={GetForegroundWindow()}");
+                Check(GetForegroundWindow() == form.Handle, "Editor has foreground focus");
                 await SetLayout(form.Handle, English);
                 await Task.Delay(500);
                 editor.Text = "ghbdtn";

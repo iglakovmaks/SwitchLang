@@ -20,6 +20,8 @@ jobs:
       - name: Publish self-contained app
         run: dotnet publish windows/SwitchLang.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -o artifacts/windows
       - name: Exercise real Windows input and clipboard
+        env:
+          SWITCHLANG_LOG: ${{ github.workspace }}/artifacts/editor.log
         run: dotnet run --project tests/windows/WindowsIntegration.csproj -c Release -- artifacts/windows/SwitchLang.exe
       - name: Package tested binary
         run: Compress-Archive -Path artifacts/windows/SwitchLang.exe,artifacts/windows/icon.png -DestinationPath artifacts/SwitchLang-win-x64.zip
@@ -30,10 +32,14 @@ jobs:
       - name: Install browser test tools
         run: npm install --prefix tests/windows/browser --ignore-scripts
       - name: Exercise Edge textarea with actual Windows layout changes
+        env:
+          SWITCHLANG_LOG: ${{ github.workspace }}/artifacts/browser.log
         run: node tests/windows/browser/test.mjs artifacts/windows/SwitchLang.exe
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: windows-diagnostics
-          path: artifacts/*.png
+          path: |
+            artifacts/*.png
+            artifacts/*.log
           if-no-files-found: ignore

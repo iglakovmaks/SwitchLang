@@ -14,6 +14,8 @@ internal static class NativeMethods
     internal const ushort VK_V = 0x56;
     internal const uint INPUT_KEYBOARD = 1;
     internal const uint KEYEVENTF_KEYUP = 0x0002;
+    internal const uint KEYEVENTF_UNICODE = 0x0004;
+    internal const uint KEYEVENTF_EXTENDEDKEY = 0x0001;
 
     [DllImport("user32.dll")]
     internal static extern IntPtr GetForegroundWindow();
@@ -26,6 +28,17 @@ internal static class NativeMethods
 
     [DllImport("user32.dll")]
     private static extern short GetAsyncKeyState(int virtualKey);
+
+    [DllImport("user32.dll")]
+    internal static extern bool GetGUIThreadInfo(uint threadId, ref GUITHREADINFO info);
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct GUITHREADINFO
+    {
+        internal uint size, flags;
+        internal IntPtr active, focus, capture, menuOwner, moveSize, caret;
+        internal int left, top, right, bottom;
+    }
 
     [DllImport("user32.dll", SetLastError = true)]
     internal static extern uint SendInput(uint numberOfInputs, INPUT[] inputs, int sizeOfInput);
@@ -99,6 +112,20 @@ internal static class NativeMethods
                IsKeyDown(VK_RWIN);
     }
 
+    internal static void SendUnicodeText(string text)
+    {
+        var inputs = new List<INPUT>(text.Length * 2);
+        foreach (var character in text)
+        {
+            foreach (var flags in new[] { KEYEVENTF_UNICODE, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP })
+                inputs.Add(new INPUT { type = INPUT_KEYBOARD, union = new InputUnion
+                {
+                    keyboardInput = new KEYBDINPUT { scanCode = character, flags = flags }
+                }});
+        }
+        Send(inputs.ToArray());
+    }
+
     internal static void SelectPreviousCharacters(int count)
     {
         if (count <= 0)
@@ -127,13 +154,19 @@ internal static class NativeMethods
                 {
                     virtualKey = key.Key,
                     scanCode = 0,
-                    flags = key.KeyUp ? KEYEVENTF_KEYUP : 0,
+                    flags = (key.KeyUp ? KEYEVENTF_KEYUP : 0) |
+                        (key.Key == VK_LEFT ? KEYEVENTF_EXTENDEDKEY : 0),
                     time = 0,
                     extraInfo = UIntPtr.Zero
                 }
             }
         }).ToArray();
 
+        Send(inputs);
+    }
+
+    private static void Send(INPUT[] inputs)
+    {
         var inputSize = Marshal.SizeOf<INPUT>();
         var expectedInputSize = IntPtr.Size == 8 ? 40 : 28;
         if (inputSize != expectedInputSize)
@@ -144,7 +177,8 @@ internal static class NativeMethods
 
         if (SendInput((uint)inputs.Length, inputs, inputSize) != inputs.Length)
         {
-            throw new InvalidOperationException("Windows не смог отправить клавиатурное событие");
+            var code = Marshal.GetLastWin32Error();
+            throw new InvalidOperationException($"Windows отклонила ввод (код {code}). Если редактор запущен от администратора, запустите SwitchLang с теми же правами.");
         }
     }
 

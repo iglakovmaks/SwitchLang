@@ -1,5 +1,4 @@
 using Microsoft.Win32;
-using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace SwitchLang;
@@ -7,269 +6,50 @@ namespace SwitchLang;
 internal sealed class SwitchLangContext : ApplicationContext
 {
     private readonly NotifyIcon notifyIcon;
-    private readonly System.Windows.Forms.Timer layoutTimer;
+    private readonly ConversionController controller;
     private readonly ToolStripMenuItem toggleItem;
-    private KeyboardLayout? previousLayout;
-    private PendingConversion? pendingConversion;
     private Form? welcomeForm;
-    private bool enabled = true;
-    private bool isConverting;
+    private Label? statusLabel;
+    private string status = "Включено — выделите текст и смените раскладку";
 
-    private static readonly TimeSpan LayoutSettleDelay = TimeSpan.FromMilliseconds(140);
-    private const int ClipboardAttempts = 12;
-    private const int ClipboardRetryDelayMs = 25;
-
-    public SwitchLangContext()
+    public SwitchLangContext(bool background = false)
     {
-        previousLayout = CurrentLayout();
-
         toggleItem = new ToolStripMenuItem("Автоисправление")
         {
             Checked = true,
             CheckOnClick = true
         };
-        toggleItem.Click += (_, _) =>
-        {
-            enabled = toggleItem.Checked;
-            if (!enabled)
-            {
-                pendingConversion = null;
-            }
-        };
-
+        controller = new ConversionController();
+        controller.StatusChanged = UpdateStatus;
+        toggleItem.Click += (_, _) => controller.SetEnabled(toggleItem.Checked);
         var menu = new ContextMenuStrip();
         menu.Items.Add(toggleItem);
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("Как пользоваться", null, (_, _) => ShowHelp());
+        menu.Items.Add("Как пользоваться", null, (_, _) => ShowWelcome());
+        menu.Items.Add("Открыть журнал диагностики", null, (_, _) =>
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("notepad.exe", DiagnosticLog.PathName)
+                { UseShellExecute = true }));
         menu.Items.Add("Добавить в автозапуск", null, (_, _) => InstallAutostart());
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Выйти", null, (_, _) => ExitThread());
-
         notifyIcon = new NotifyIcon
         {
             Icon = IconLoader.Load(),
-            Text = "SwitchLang",
+            Text = "SwitchLang 0.2.3",
             ContextMenuStrip = menu,
             Visible = true
         };
         notifyIcon.DoubleClick += (_, _) => ShowWelcome();
-
-        layoutTimer = new System.Windows.Forms.Timer { Interval = 120 };
-        layoutTimer.Tick += OnLayoutTick;
-        layoutTimer.Start();
-        Application.Idle += ShowWelcomeOnIdle;
+        if (!background) Application.Idle += ShowWelcomeOnIdle;
+        DiagnosticLog.Write($"started version=0.2.3 architecture={System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture}");
     }
 
-    private void OnLayoutTick(object? sender, EventArgs e)
+    private void UpdateStatus(string message)
     {
-        var current = CurrentLayout();
-        if (current is null)
-        {
-            return;
-        }
-
-        var currentLayout = current.Value;
-
-        if (previousLayout is null)
-        {
-            previousLayout = currentLayout;
-            return;
-        }
-
-        if (currentLayout == previousLayout)
-        {
-            TryProcessPendingConversion(currentLayout);
-            return;
-        }
-
-        var sourceLayout = previousLayout.GetValueOrDefault();
-        previousLayout = currentLayout;
-        pendingConversion = enabled && !isConverting
-            ? new PendingConversion(sourceLayout, currentLayout, DateTime.UtcNow + LayoutSettleDelay)
-            : null;
-
-        TryProcessPendingConversion(currentLayout);
-    }
-
-    private void TryProcessPendingConversion(KeyboardLayout current)
-    {
-        if (!enabled || isConverting || pendingConversion is not { } pending)
-        {
-            return;
-        }
-
-        if (pending.TargetLayout != current ||
-            DateTime.UtcNow < pending.ReadyAt ||
-            NativeMethods.IsModifierKeyDown())
-        {
-            return;
-        }
-
-        pendingConversion = null;
-        isConverting = true;
-        try
-        {
-            var result = ReplaceSelectedText(pending.SourceLayout);
-            if (result.Success)
-            {
-                notifyIcon.Text = "SwitchLang: исправлено";
-            }
-        }
-        catch (Exception error)
-        {
-            notifyIcon.Text = ShortStatus(error.Message);
-        }
-        finally
-        {
-            isConverting = false;
-        }
-    }
-
-    private static KeyboardLayout? CurrentLayout()
-    {
-        var foreground = NativeMethods.GetForegroundWindow();
-        if (foreground == IntPtr.Zero)
-        {
-            return null;
-        }
-
-        var threadId = NativeMethods.GetWindowThreadProcessId(foreground, out _);
-        var hkl = NativeMethods.GetKeyboardLayout(threadId);
-        var languageId = unchecked((ushort)hkl.ToInt64());
-        var primaryLanguage = languageId & 0x03ff;
-        return primaryLanguage switch
-        {
-            0x19 => KeyboardLayout.Russian,
-            0x09 => KeyboardLayout.English,
-            _ => null
-        };
-    }
-
-    private static ConversionResult ReplaceSelectedText(KeyboardLayout sourceLayout)
-    {
-        IDataObject? originalClipboard = null;
-        try
-        {
-            originalClipboard = Clipboard.GetDataObject();
-            if (!TryClearClipboard())
-            {
-                return ConversionResult.NotChanged("Буфер обмена занят");
-            }
-
-            NativeMethods.SendCtrlKey(NativeMethods.VK_C);
-
-            var selected = ReadClipboardText();
-            if (string.IsNullOrEmpty(selected) || !KeyboardLayoutConverter.CanConvert(selected, sourceLayout))
-            {
-                return ConversionResult.NotChanged("Выделенный текст не найден");
-            }
-
-            var converted = KeyboardLayoutConverter.Convert(selected, sourceLayout);
-            if (converted == selected)
-            {
-                return ConversionResult.NotChanged("В выделении нет символов для преобразования");
-            }
-
-            if (!TrySetClipboardText(converted))
-            {
-                return ConversionResult.NotChanged("Не удалось подготовить исправленный текст");
-            }
-
-            NativeMethods.SendCtrlKey(NativeMethods.VK_V);
-            Thread.Sleep(140);
-
-            // Re-select the inserted text so another layout switch converts it back.
-            NativeMethods.SelectPreviousCharacters(converted.Length);
-            return ConversionResult.Changed($"Исправлено символов: {selected.Length}");
-        }
-        finally
-        {
-            if (originalClipboard is not null)
-            {
-                try
-                {
-                    RestoreClipboard(originalClipboard);
-                }
-                catch
-                {
-                    // Clipboard restoration must not crash the resident app.
-                }
-            }
-        }
-    }
-
-    private static bool TryClearClipboard()
-    {
-        for (var attempt = 0; attempt < ClipboardAttempts; attempt++)
-        {
-            try
-            {
-                Clipboard.Clear();
-                return true;
-            }
-            catch (ExternalException)
-            {
-                Thread.Sleep(ClipboardRetryDelayMs);
-            }
-        }
-
-        return false;
-    }
-
-    private static string ReadClipboardText()
-    {
-        for (var attempt = 0; attempt < ClipboardAttempts; attempt++)
-        {
-            try
-            {
-                if (Clipboard.ContainsText(TextDataFormat.UnicodeText))
-                {
-                    return Clipboard.GetText(TextDataFormat.UnicodeText);
-                }
-            }
-            catch (ExternalException)
-            {
-                // Another process may still be writing to the clipboard.
-            }
-
-            Thread.Sleep(ClipboardRetryDelayMs);
-        }
-
-        return string.Empty;
-    }
-
-    private static bool TrySetClipboardText(string text)
-    {
-        for (var attempt = 0; attempt < ClipboardAttempts; attempt++)
-        {
-            try
-            {
-                Clipboard.SetText(text, TextDataFormat.UnicodeText);
-                return true;
-            }
-            catch (ExternalException)
-            {
-                Thread.Sleep(ClipboardRetryDelayMs);
-            }
-        }
-
-        return false;
-    }
-
-    private static void RestoreClipboard(IDataObject clipboard)
-    {
-        for (var attempt = 0; attempt < ClipboardAttempts; attempt++)
-        {
-            try
-            {
-                Clipboard.SetDataObject(clipboard, true);
-                return;
-            }
-            catch (ExternalException)
-            {
-                Thread.Sleep(ClipboardRetryDelayMs);
-            }
-        }
+        status = message;
+        notifyIcon.Text = ShortStatus(message);
+        if (statusLabel is { IsDisposed: false }) statusLabel.Text = message;
+        DiagnosticLog.Write($"status={message}");
     }
 
     private void ShowWelcomeOnIdle(object? sender, EventArgs e)
@@ -289,8 +69,8 @@ internal sealed class SwitchLangContext : ApplicationContext
 
         welcomeForm = new Form
         {
-            Text = "SwitchLang",
-            ClientSize = new Size(520, 330),
+            Text = "SwitchLang 0.2.3",
+            ClientSize = new Size(520, 382),
             StartPosition = FormStartPosition.CenterScreen,
             FormBorderStyle = FormBorderStyle.FixedDialog,
             MaximizeBox = false,
@@ -319,7 +99,7 @@ internal sealed class SwitchLangContext : ApplicationContext
 
         var permissions = new Label
         {
-            Text = "В Windows отдельное разрешение Accessibility обычно не требуется. Если Windows покажет запрос на доступ к буферу обмена, разрешите его.",
+            Text = "Для обычных редакторов отдельные разрешения не нужны. Если редактор открыт от имени администратора, SwitchLang тоже потребуются права администратора.",
             AutoSize = false,
             Size = new Size(458, 54),
             Location = new Point(28, 178)
@@ -335,12 +115,22 @@ internal sealed class SwitchLangContext : ApplicationContext
         };
         welcomeForm.Controls.Add(note);
 
+        statusLabel = new Label
+        {
+            Text = status,
+            AutoSize = false,
+            Size = new Size(458, 48),
+            Location = new Point(28, 278),
+            ForeColor = SystemColors.HotTrack
+        };
+        welcomeForm.Controls.Add(statusLabel);
+
         var credit = new Label
         {
             Text = "Developed by iglakovmaks",
             AutoSize = true,
             ForeColor = SystemColors.GrayText,
-            Location = new Point(28, 288)
+            Location = new Point(28, 344)
         };
         welcomeForm.Controls.Add(credit);
 
@@ -349,7 +139,7 @@ internal sealed class SwitchLangContext : ApplicationContext
             Text = "Понятно",
             DialogResult = DialogResult.OK,
             Size = new Size(100, 32),
-            Location = new Point(392, 282)
+            Location = new Point(392, 334)
         };
         close.Click += (_, _) => welcomeForm.Close();
         welcomeForm.AcceptButton = close;
@@ -381,7 +171,7 @@ internal sealed class SwitchLangContext : ApplicationContext
 
     private static string ShortStatus(string message)
     {
-        const int maxLength = 60;
+        const int maxLength = 48;
         return message.Length <= maxLength ? $"SwitchLang: {message}" : $"SwitchLang: {message[..maxLength]}…";
     }
 
@@ -389,8 +179,7 @@ internal sealed class SwitchLangContext : ApplicationContext
     {
         if (disposing)
         {
-            layoutTimer.Stop();
-            layoutTimer.Dispose();
+            controller.Dispose();
             notifyIcon.Visible = false;
             notifyIcon.Dispose();
             welcomeForm?.Close();
@@ -398,14 +187,4 @@ internal sealed class SwitchLangContext : ApplicationContext
         base.Dispose(disposing);
     }
 
-    private readonly record struct ConversionResult(bool Success, string Details)
-    {
-        public static ConversionResult Changed(string details) => new(true, details);
-        public static ConversionResult NotChanged(string details) => new(false, details);
-    }
-
-    private readonly record struct PendingConversion(
-        KeyboardLayout SourceLayout,
-        KeyboardLayout TargetLayout,
-        DateTime ReadyAt);
 }
