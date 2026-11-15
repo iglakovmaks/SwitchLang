@@ -23,18 +23,18 @@ jobs:
         env:
           SWITCHLANG_LOG: ${{ github.workspace }}/artifacts/editor.log
         run: dotnet run --project tests/windows/WindowsIntegration.csproj -c Release -- artifacts/windows/SwitchLang.exe
-      - name: Package tested binary
-        run: Compress-Archive -Path artifacts/windows/SwitchLang.exe,artifacts/windows/icon.png -DestinationPath artifacts/SwitchLang-win-x64.zip
-      - uses: actions/upload-artifact@v4
-        with:
-          name: SwitchLang-win-x64
-          path: artifacts/SwitchLang-win-x64.zip
       - name: Install browser test tools
         run: npm install --prefix tests/windows/browser --ignore-scripts
       - name: Exercise Edge textarea with actual Windows layout changes
         env:
           SWITCHLANG_LOG: ${{ github.workspace }}/artifacts/browser.log
         run: node tests/windows/browser/test.mjs artifacts/windows/SwitchLang.exe
+      - name: Package tested binary
+        run: Compress-Archive -Path artifacts/windows/SwitchLang.exe,artifacts/windows/icon.png -DestinationPath artifacts/SwitchLang-win-x64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SwitchLang-win-x64
+          path: artifacts/SwitchLang-win-x64.zip
       - uses: actions/upload-artifact@v4
         if: always()
         with:

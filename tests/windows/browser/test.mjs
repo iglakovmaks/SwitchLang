@@ -3,7 +3,7 @@ import { spawn, execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
 
 const app = spawn(resolve(process.argv[2]), ['--background'], { stdio: 'ignore' });
-const browser = await chromium.launch({ channel: 'msedge', headless: false, args: ['--force-renderer-accessibility'] });
+const browser = await chromium.launch({ channel: 'msedge', headless: false });
 const page = await browser.newPage();
 try {
   await page.setContent('<textarea id="editor" style="width:600px;height:300px"></textarea>');
