@@ -59,6 +59,13 @@ internal sealed class ConversionController : IDisposable
         try
         {
             var selected = await selection.ReadAsync(work.Target);
+            // Browsers lazily build their accessibility tree after the first IA2 request.
+            for (var attempt = 0; attempt < 3 && selected.Problem is not null; attempt++)
+            {
+                await Task.Delay(80);
+                if (disposed || !enabled || ForegroundTarget.Read() != work.Target) return;
+                selected = await selection.ReadAsync(work.Target);
+            }
             if (disposed || !enabled || ForegroundTarget.Read() != work.Target) return;
             if (selected.Problem is { } problem) { Report(problem); return; }
             if (selected.Text.Length == 0) { DiagnosticLog.Write("no_selection"); return; }

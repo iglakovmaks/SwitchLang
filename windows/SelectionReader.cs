@@ -34,6 +34,7 @@ internal sealed class SelectionReader
         timeouts.TransactionTimeout = 500;
         var element = automation.GetFocusedElement();
         if (element is null || element.CurrentIsPassword != 0) return new(string.Empty);
+        var isBrowser = element.CurrentFrameworkId == "Chrome" || element.CurrentFrameworkId == "Mozilla";
         // Chromium can expose TextPattern on the document rather than the focused textarea.
         for (var depth = 0; depth < 8 && element is not null; depth++)
         {
@@ -49,6 +50,7 @@ internal sealed class SelectionReader
             }
             element = automation.ControlViewWalker.GetParentElement(element);
         }
-        return new(string.Empty, "Это поле не предоставляет доступ к выделенному тексту");
+        return isBrowser ? BrowserSelection.Read(target) :
+            new(string.Empty, "Это поле не предоставляет доступ к выделенному тексту");
     }
 }
