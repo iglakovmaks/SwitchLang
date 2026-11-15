@@ -1,0 +1,29 @@
+name: Windows integration and package
+
+on:
+  push:
+    paths: ['windows/**', 'tests/windows/**', '.github/workflows/windows.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      - name: Publish self-contained app
+        run: dotnet publish windows/SwitchLang.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -o artifacts/windows
+      - name: Exercise real Windows input and clipboard
+        run: dotnet run --project tests/windows/WindowsIntegration.csproj -c Release -- artifacts/windows/SwitchLang.exe
+      - name: Package tested binary
+        run: Compress-Archive -Path artifacts/windows/SwitchLang.exe,artifacts/windows/icon.png -DestinationPath artifacts/SwitchLang-win-x64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SwitchLang-win-x64
+          path: artifacts/SwitchLang-win-x64.zip
