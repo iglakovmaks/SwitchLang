@@ -25,7 +25,8 @@ jobs:
         run: dotnet run --project tests/windows/WindowsIntegration.csproj -c Release -- artifacts/windows/SwitchLang.exe
       - name: Install browser test tools
         if: ${{ !cancelled() }}
-        run: npm install --prefix tests/windows/browser --ignore-scripts
+        working-directory: tests/windows/browser
+        run: npm install --ignore-scripts
       - name: Exercise Edge textarea with actual Windows layout changes
         if: ${{ !cancelled() }}
         env:
