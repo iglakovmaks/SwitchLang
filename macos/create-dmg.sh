@@ -4,7 +4,9 @@ set -eu
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 cd "$ROOT"
 
-./build-app.sh
+if [ "${SWITCHLANG_SKIP_BUILD:-0}" != 1 ]; then
+    ./build-app.sh
+fi
 
 APP_PATH="$ROOT/dist/SwitchLang.app"
 DMG_PATH="$ROOT/dist/SwitchLang.dmg"
@@ -23,6 +25,7 @@ trap cleanup EXIT INT TERM
 
 mkdir -p "$STAGING"
 cp -R "$APP_PATH" "$STAGING/SwitchLang.app"
+codesign --verify --deep --strict --verbose=2 "$STAGING/SwitchLang.app"
 ln -s /Applications "$STAGING/Applications"
 swift "$ROOT/dmg-background.swift" "$BACKGROUND"
 
@@ -88,4 +91,5 @@ hdiutil convert "$RW_DMG" \
     -ov \
     -o "$DMG_PATH" >/dev/null
 
+./verify-dmg.sh "$DMG_PATH"
 echo "Built $DMG_PATH"

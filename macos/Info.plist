@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDisplayName</key><string>SwitchLang</string>
+    <key>CFBundleExecutable</key><string>SwitchLang</string>
+    <key>CFBundleIdentifier</key><string>com.switchlang.app</string>
+    <key>CFBundleName</key><string>SwitchLang</string>
+    <key>CFBundlePackageType</key><string>APPL</string>
+    <key>CFBundleShortVersionString</key><string>0.2.4</string>
+    <key>CFBundleVersion</key><string>4</string>
+    <key>CFBundleIconFile</key><string>SwitchLang.icns</string>
+    <key>LSMinimumSystemVersion</key><string>13.0</string>
+    <key>LSUIElement</key><true/>
+    <key>LSMultipleInstancesProhibited</key><true/>
+    <key>NSAppleEventsUsageDescription</key><string>SwitchLang использует системное копирование и вставку для исправления выделенного текста.</string>
+</dict>
+</plist>
